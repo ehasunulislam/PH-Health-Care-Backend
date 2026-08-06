@@ -7,4 +7,4 @@ export const notFound = (req: Request, res: Response) => {
         path: req.originalUrl,
         date: new Date()
     })
-}
+};
