@@ -5,8 +5,20 @@ import { sendResponse } from "../../utils/sendResponse";
 import type { IRequestUser } from "./auth.interface";
 import { AuthService } from "./auth.service";
 
+// Register functionality
 const registerPatient = catchAsync(async (req: Request, res: Response) => {
+	// const payload = userValidation.patientRegistrationZodSchema.safeDecode(req.body);
+
+	// if (!payload.success) {
+	// 	// let errorMessage = "";
+	// 	// payload.error.issues.forEach((issue) => {
+	// 	// 	errorMessage = errorMessage + issue.message
+	// 	// })
+	// 	throw new Error(payload.error.issues[0].message);
+	// }
+
 	const payload = req.body;
+
 	const result = await AuthService.registerPatient(payload);
 
 	const { accessToken, refreshToken, user, patient } = result;
@@ -37,6 +49,7 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+// login user functionality
 const loginUser = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
 	const result = await AuthService.loginUser(payload);
@@ -152,3 +165,5 @@ export const AuthController = {
 	refreshToken,
 	googleLogin,
 };
+
+// 4.15

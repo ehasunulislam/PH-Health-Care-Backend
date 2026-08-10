@@ -16,7 +16,7 @@ import type * as authInterface from "./auth.interface";
 const registerPatient = async (
 	payload: authInterface.IRegisterPatientPayload,
 ) => {
-	const { name, password } = payload;
+	const { name, password, patient: patientData } = payload;
 	const email = payload.email.trim().toLowerCase();
 
 	const isUserExists = await prisma.user.findUnique({
@@ -38,7 +38,11 @@ const registerPatient = async (
 			status: UserStatus.ACTIVE,
 			emailVerified: false,
 			patient: {
-				create: { name, email },
+				create: {
+					name,
+					email,
+					contactNumber: patientData?.contactNumber || "",
+				},
 			},
 		},
 		omit: { password: true },
