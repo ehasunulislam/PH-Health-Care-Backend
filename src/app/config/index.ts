@@ -24,4 +24,8 @@ export default {
 	patient_name: process.env.PATIENT_NAME!,
 	patient_email: process.env.PATIENT_EMAIL!,
 	patient_password: process.env.PATIENT_PASSWORD!,
+	redis_user: process.env.REDIS_USER!,
+	redis_password: process.env.REDIS_PASS!,
+	redis_host: process.env.REDIS_HOST!,
+	redis_port: process.env.REDIS_PORT!,
 };
