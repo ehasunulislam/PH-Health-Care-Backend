@@ -15,6 +15,7 @@ import { jwtUtils } from "../../utils/jwt";
 import type * as authInterface from "./auth.interface";
 import { redisClient } from "../../lib/redis";
 import { error } from "console";
+import { transporter } from "../../lib/nodeMailer";
 
 
 // Register functionality
@@ -384,7 +385,15 @@ const forgotPassword = async(payload: authInterface.IForgotPasswordPayload) => {
 			type: "EX",
 			value: 5 * 60
 		}
-	})
+	});
+
+	/* node-mailer send otp */
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: isUserExist.email,
+		subject: "Forgot Password",
+		text: `Your OTP is ${otp}`
+	});
 }
 
 // reset password
@@ -443,7 +452,15 @@ const resetPassword = async(payload: authInterface.IResetPasswordPayload) => {
 	});
 
 	/* delete the key with redis */
-	await redisClient.del([key])
+	await redisClient.del([key]);
+
+	/* node-mailer send message after changed password */
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: isUserExist.email,
+		subject: "Forgot Password",
+		html: `Your Password Changed Successfully`
+	});
 }
 
 export const AuthService = {
