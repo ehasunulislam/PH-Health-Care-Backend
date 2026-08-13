@@ -79,6 +79,8 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+
+// get me with profile in login user
 const getMe = catchAsync(async (req: Request, res: Response) => {
 	const user = req.user as unknown as IRequestUser;
 
@@ -95,6 +97,8 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+
+// get a new accessToken
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
 	if (!req.cookies.refreshToken) {
 		throw new Error("Refresh token is missing");
@@ -125,6 +129,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 		},
 	});
 });
+
 
 // googl's client
 const googleLogin = catchAsync(async (req: Request, res: Response) => {
@@ -158,12 +163,45 @@ const googleLogin = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+
+// forgot password
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+
+	await AuthService.forgotPassword(payload);
+
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: `OTP sent to your ${payload.email}`,
+		data: null,
+	});
+});
+
+// reset password
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+
+	await AuthService.resetPassword(payload);
+
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Password reset successfully",
+		data: null
+	});
+});
+
 export const AuthController = {
 	registerPatient,
 	loginUser,
 	getMe,
 	refreshToken,
 	googleLogin,
+	forgotPassword,
+	resetPassword
 };
 
 // 4.15

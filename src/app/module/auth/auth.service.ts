@@ -2,6 +2,7 @@
 import bcrypt from "bcryptjs";
 import type { TokenPayload } from "google-auth-library";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
+import crypto from "crypto";
 import {
 	AuthProvider,
 	Role,
@@ -12,7 +13,11 @@ import { googleClient } from "../../lib/googleAuth";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
 import type * as authInterface from "./auth.interface";
+import { redisClient } from "../../lib/redis";
+import { error } from "console";
 
+
+// Register functionality
 const registerPatient = async (
 	payload: authInterface.IRegisterPatientPayload,
 ) => {
@@ -27,7 +32,7 @@ const registerPatient = async (
 		throw new Error("User with this email already exists");
 	}
 
-	const hashedPassword = await bcrypt.hash(password, 8);
+	const hashedPassword = await bcrypt.hash(password, Number(config.bcrypt_salt_rounds));
 
 	const createdUser = await prisma.user.create({
 		data: {
@@ -136,6 +141,8 @@ const loginUser = async (payload: authInterface.ILoginUserPayload) => {
 	};
 };
 
+
+// get me with profile in login user
 const getMe = async (user: authInterface.IRequestUser) => {
 	const isUserExists = await prisma.user.findUnique({
 		where: {
@@ -156,6 +163,8 @@ const getMe = async (user: authInterface.IRequestUser) => {
 	return isUserExists;
 };
 
+
+// get a new accessToken
 const refreshToken = async (token: string) => {
 	const verifiedRefreshToken = jwtUtils.verifyToken(
 		token,
@@ -204,6 +213,7 @@ const refreshToken = async (token: string) => {
 		refreshToken,
 	};
 };
+
 
 // googl's client
 const googleLogin = async (payload: authInterface.IGoogleLogin) => {
@@ -333,10 +343,115 @@ const googleLogin = async (payload: authInterface.IGoogleLogin) => {
 	};
 };
 
+
+// forgot password
+const forgotPassword = async(payload: authInterface.IForgotPasswordPayload) => {
+	const {email} = payload;
+
+	const  isUserExist = await prisma.user.findUnique({
+		where: {
+			email
+		}
+	});
+
+	if(!isUserExist) {
+		throw new Error("user not found");
+	}
+
+	if(isUserExist.status === "BLOCKED") {
+		throw new Error("user is blocked")
+	}
+
+	if(!isUserExist.emailVerified) {
+		throw new Error("user is not verified");
+	}
+
+
+	if(isUserExist.isDeleted || isUserExist.status === "DELETED"){
+		throw new Error("user is deleted");
+	}
+
+	if(isUserExist.googleId && isUserExist.authProvider === "GOOGLE") {
+		throw new Error("user has an account with GOOGLE");
+	}
+
+	/* generate the otp with redis */
+	const otp = crypto.randomInt(100000, 1000000).toString();
+	const key = `forgot-password-otp: ${isUserExist.email}`
+	
+	await redisClient.set(key, otp, {
+		expiration: {
+			type: "EX",
+			value: 5 * 60
+		}
+	})
+}
+
+// reset password
+const resetPassword = async(payload: authInterface.IResetPasswordPayload) => {
+	const {email, otp, newPassword} = payload;
+
+	const  isUserExist = await prisma.user.findUnique({
+		where: {
+			email
+		}
+	});
+
+	if(!isUserExist) {
+		throw new Error("user not found");
+	}
+
+	if(isUserExist.status === "BLOCKED") {
+		throw new Error("user is blocked")
+	}
+
+	if(!isUserExist.emailVerified) {
+		throw new Error("user is not verified");
+	}
+
+
+	if(isUserExist.isDeleted || isUserExist.status === "DELETED"){
+		throw new Error("user is deleted");
+	}
+
+	if(isUserExist.googleId && isUserExist.authProvider === "GOOGLE") {
+		throw new Error("user has an account with GOOGLE");
+	}
+
+	const key = `forgot-password-otp: ${isUserExist.email}`
+
+	const redisOtp = await redisClient.get(key);
+
+	if(!redisOtp) {
+		throw new Error("Invalid OTP");
+	}
+
+	if(redisOtp !== otp) {
+		throw new Error("OTP dose not matched");
+	}
+
+	const hashedNewPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
+
+	/* password updated */
+	await prisma.user.update({
+		where: {
+			email: isUserExist.email
+		},
+		data: {
+			password: hashedNewPassword
+		}
+	});
+
+	/* delete the key with redis */
+	await redisClient.del([key])
+}
+
 export const AuthService = {
 	registerPatient,
 	loginUser,
 	getMe,
 	refreshToken,
 	googleLogin,
+	forgotPassword, 
+	resetPassword
 };

@@ -25,8 +25,10 @@ const patientRegistrationZodSchema = z.object({
 
 	patient: z.object({
 		contactNumber: z.string().optional(),
-	}),
+	}).optional(),
 });
+
+
 
 const loginZodSchema = z.object({
 	email: z.email({
@@ -47,7 +49,38 @@ const loginZodSchema = z.object({
 		}),
 });
 
+
+const ForgotPasswordZodSchema =  z.object({
+	email: z.email({
+		message: "Please provide a valid email address",
+	}),
+})
+
+
+const ResetPasswordZodSchema = z.object({
+	email: z.email({
+		message: "Please provide a valid email address",
+	}),
+
+	newPassword: z
+		.string()
+		.min(8, { message: "Password must be at least 8 characters long" })
+		.regex(/[A-Z]/, {
+			message: "Password must contain at least one uppercase letter",
+		})
+		.regex(/[0-9]/, {
+			message: "Password must contain at least one number",
+		})
+		.regex(/[^A-Za-z0-9]/, {
+			message: "Password must contain at least one special character",
+		}),
+
+	otp: z.string().length(6)
+})
+
 export const userValidation = {
 	patientRegistrationZodSchema,
 	loginZodSchema,
+	ForgotPasswordZodSchema,
+	ResetPasswordZodSchema
 };
