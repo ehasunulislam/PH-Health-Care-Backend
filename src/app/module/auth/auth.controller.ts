@@ -204,4 +204,3 @@ export const AuthController = {
 	resetPassword
 };
 
-// 4.15

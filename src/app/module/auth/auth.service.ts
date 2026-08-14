@@ -12,10 +12,12 @@ import config from "../../config";
 import { googleClient } from "../../lib/googleAuth";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
+import ejs from "ejs"
+import path from "path";
 import type * as authInterface from "./auth.interface";
 import { redisClient } from "../../lib/redis";
-import { error } from "console";
 import { transporter } from "../../lib/nodeMailer";
+
 
 
 // Register functionality
@@ -378,21 +380,35 @@ const forgotPassword = async(payload: authInterface.IForgotPasswordPayload) => {
 
 	/* generate the otp with redis */
 	const otp = crypto.randomInt(100000, 1000000).toString();
-	const key = `forgot-password-otp: ${isUserExist.email}`
+	const key = `forgot-password-otp: ${isUserExist.email}`;
+	const expirationLimit = 5 * 60
+	
 	
 	await redisClient.set(key, otp, {
 		expiration: {
 			type: "EX",
-			value: 5 * 60
+			value: expirationLimit
 		}
 	});
+
+
+	/* processing ejs */
+	const templatePath = path.join(process.cwd(), "/src/app/template/forgot-pass.ejs");
+	
+	const html = await ejs.renderFile(templatePath, {
+		name: isUserExist.name,
+		otp,
+		expirationLimit: expirationLimit / 60
+	})
+
 
 	/* node-mailer send otp */
 	await transporter.sendMail({
 		from: config.email_sender,
 		to: isUserExist.email,
 		subject: "Forgot Password",
-		text: `Your OTP is ${otp}`
+		// text: `Your OTP is ${otp}`
+		html
 	});
 }
 
@@ -455,11 +471,19 @@ const resetPassword = async(payload: authInterface.IResetPasswordPayload) => {
 	await redisClient.del([key]);
 
 	/* node-mailer send message after changed password */
+	const templatePath = path.join(process.cwd(), "/src/app/template/reset-pass-success.ejs");
+	
+	const html = await ejs.renderFile(templatePath, {
+		name: isUserExist.name,
+	})
+
+	/* node-mailer send otp */
 	await transporter.sendMail({
 		from: config.email_sender,
 		to: isUserExist.email,
 		subject: "Forgot Password",
-		html: `Your Password Changed Successfully`
+		// text: `Your OTP is ${otp}`
+		html
 	});
 }
 
