@@ -12,11 +12,12 @@ import config from "../../config";
 import { googleClient } from "../../lib/googleAuth";
 import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
-import ejs from "ejs"
+import ejs, { name, renderFile } from "ejs"
 import path from "path";
 import type * as authInterface from "./auth.interface";
 import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodeMailer";
+import { from } from "node:stream/iter";
 
 
 
@@ -123,14 +124,15 @@ const verificationPatient = async(payload: authInterface.IVerifyEmailPayload) =>
 		throw new Error("OTP not matched")
 	}
 
-	await redisClient.del([otpKey]);
+	/* delete the otp after finish the email verification */
+	await redisClient.del(otpKey);
 
 	/* get the data from redis database  */
 	const patientRegistrationKey = `patient-registration-data:${email}`;
 	const registrationData = await redisClient.get(patientRegistrationKey);
 
 	if(!registrationData) {
-		throw new Error("User dose not exist")
+		throw new Error("User dose not exist");
 	}
 
 	const patientPayload: authInterface.IRegisterPatientPayload = JSON.parse(registrationData);
@@ -142,7 +144,7 @@ const verificationPatient = async(payload: authInterface.IVerifyEmailPayload) =>
 			password: patientPayload.password,
 			role: Role.PATIENT,
 			status: UserStatus.ACTIVE,
-			emailVerified: false,
+			emailVerified: true,
 			patient: {
 				create: {
 					name: patientPayload.name,
@@ -154,6 +156,24 @@ const verificationPatient = async(payload: authInterface.IVerifyEmailPayload) =>
 		omit: { password: true },
 		include: { patient: true },
 	});
+
+
+	/* delete the user data from redis after creating the user in database */
+	await redisClient.del(patientRegistrationKey);
+
+	/* sending a welcome email registered user */
+	const templatePath = path.join(process.cwd(), "/src/app/template/patient-welcome-email.ejs");
+	const templateData = {
+		name: createdUser.name
+	}
+	const html = await ejs.renderFile(templatePath, templateData);
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: email,
+		subject: "welcome ph healthcare system",
+		html
+	})
 
 	const { patient, ...user } = createdUser;
 	const jwtPayload = {
@@ -405,6 +425,20 @@ const googleLogin = async (payload: authInterface.IGoogleLogin) => {
 					},
 				},
 			});
+
+			/* sending a welcome message after creating user */
+			const templatePath = path.join(process.cwd(), "/src/app/template/patient-welcome-email.ejs");
+			const templateData = {
+				name: user.name
+			}
+			const html = await ejs.renderFile(templatePath, templateData);
+
+			await transporter.sendMail({
+				from: config.email_sender,
+				to: user.email,
+				subject: "welcome ph healthcare system",
+				html
+			})
 		}
 	}
 
