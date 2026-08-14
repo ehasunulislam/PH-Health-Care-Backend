@@ -19,7 +19,37 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 
 	const payload = req.body;
 
-	const result = await AuthService.registerPatient(payload);
+	await AuthService.registerPatient(payload);
+
+	// const { accessToken, refreshToken, user, patient } = result;
+
+	// res.cookie("accessToken", accessToken, {
+	// 	httpOnly: true,
+	// 	secure: false,
+	// 	sameSite: "none",
+	// 	maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
+	// });
+	// res.cookie("refreshToken", refreshToken, {
+	// 	httpOnly: true,
+	// 	secure: false,
+	// 	sameSite: "none",
+	// 	maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+	// });
+
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "verification OTP send in your Email",
+		data: null,
+	});
+});
+
+
+// verification user for register functionality
+const verificationPatient = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+
+	const result = await AuthService.verificationPatient(payload);
 
 	const { accessToken, refreshToken, user, patient } = result;
 
@@ -39,12 +69,9 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "Patient registered successfully",
+		message: "User registered successfully",
 		data: {
-			accessToken,
-			refreshToken,
-			user,
-			patient,
+			accessToken, refreshToken, user, patient
 		},
 	});
 });
@@ -196,11 +223,12 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 
 export const AuthController = {
 	registerPatient,
+	verificationPatient,
 	loginUser,
 	getMe,
 	refreshToken,
 	googleLogin,
 	forgotPassword,
-	resetPassword
+	resetPassword,
 };
 

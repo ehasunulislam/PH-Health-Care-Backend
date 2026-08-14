@@ -8,25 +8,39 @@ import { userValidation } from "./auth.validation";
 
 const router = Router();
 
+// register route
 router.post(
 	"/register",
 	validatedSchema(userValidation.patientRegistrationZodSchema),
-	AuthController.registerPatient,
+	AuthController.registerPatient
 );
 
+
+// verified patient route
+router.post(
+	"/verified-email",
+	validatedSchema(userValidation.patientEmailVerifiedZodSchema),
+	AuthController.verificationPatient
+);
+
+
+
+// login route
 router.post(
 	"/login",
 	validatedSchema(userValidation.loginZodSchema),
 	AuthController.loginUser,
 );
 
+
+// profile route
 router.get(
 	"/me",
 	auth(Role.ADMIN, Role.DOCTOR, Role.PATIENT, Role.SUPER_ADMIN),
 	AuthController.getMe,
 );
 
-
+// get new accessToken route
 router.post("/refresh-token", AuthController.refreshToken);
 
 

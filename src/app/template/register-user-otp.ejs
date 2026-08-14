@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registration Verification</title>
+</head>
+
+<body
+  style="
+    margin: 0;
+    padding: 0;
+    background: #f4f7fb;
+    font-family: Arial, Helvetica, sans-serif;
+  "
+>
+  <table
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    style="padding: 40px 15px; background: #f4f7fb;"
+  >
+    <tr>
+      <td align="center">
+
+        <!-- Main Card -->
+        <table
+          width="100%"
+          cellpadding="0"
+          cellspacing="0"
+          style="
+            max-width: 550px;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+          "
+        >
+
+          <!-- Header -->
+          <tr>
+            <td
+              align="center"
+              style="
+                padding: 30px;
+                background: #2563eb;
+                color: #ffffff;
+              "
+            >
+              <h1 style="margin: 0; font-size: 26px;">
+                PH Healthcare
+              </h1>
+
+              <p
+                style="
+                  margin: 8px 0 0;
+                  color: #dbeafe;
+                  font-size: 14px;
+                "
+              >
+                Welcome to PH Healthcare
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 35px;">
+
+              <h2
+                style="
+                  margin: 0 0 15px;
+                  color: #111827;
+                  font-size: 22px;
+                "
+              >
+                Welcome, <%= name %>!
+              </h2>
+
+              <p
+                style="
+                  margin: 0 0 10px;
+                  color: #4b5563;
+                  font-size: 15px;
+                  line-height: 1.6;
+                "
+              >
+                Thank you for registering with PH Healthcare.
+                Please verify your email address to activate your account.
+              </p>
+
+              <!-- Email -->
+              <p
+                style="
+                  margin: 0 0 25px;
+                  color: #2563eb;
+                  font-size: 15px;
+                  font-weight: bold;
+                "
+              >
+                <%= email %>
+              </p>
+
+              <!-- OTP Box -->
+              <div
+                style="
+                  padding: 25px;
+                  text-align: center;
+                  background: #eff6ff;
+                  border: 1px solid #bfdbfe;
+                  border-radius: 10px;
+                "
+              >
+                <p
+                  style="
+                    margin: 0 0 10px;
+                    color: #6b7280;
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                  "
+                >
+                  Your Verification Code
+                </p>
+
+                <div
+                  style="
+                    color: #2563eb;
+                    font-size: 32px;
+                    font-weight: bold;
+                    letter-spacing: 8px;
+                  "
+                >
+                  <%= otp %>
+                </div>
+              </div>
+
+              <!-- Expiration -->
+              <p
+                style="
+                  margin: 20px 0 10px;
+                  color: #4b5563;
+                  font-size: 14px;
+                  line-height: 1.6;
+                "
+              >
+                This verification code will expire in
+                <strong style="color: #2563eb;">
+                  <%= expirationLimit %>
+                </strong>.
+              </p>
+
+              <p
+                style="
+                  margin: 0;
+                  color: #6b7280;
+                  font-size: 13px;
+                  line-height: 1.6;
+                "
+              >
+                Please do not share this verification code with anyone.
+                If you did not create an account with PH Healthcare,
+                you can safely ignore this email.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td
+              align="center"
+              style="
+                padding: 20px;
+                background: #f9fafb;
+                border-top: 1px solid #e5e7eb;
+              "
+            >
+              <p
+                style="
+                  margin: 0;
+                  color: #9ca3af;
+                  font-size: 12px;
+                "
+              >
+                This is an automated email from PH Healthcare.
+              </p>
+
+              <p
+                style="
+                  margin: 8px 0 0;
+                  color: #9ca3af;
+                  font-size: 11px;
+                "
+              >
+                © <%= new Date().getFullYear() %> PH Healthcare
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

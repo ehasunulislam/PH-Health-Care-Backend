@@ -21,9 +21,7 @@ import { transporter } from "../../lib/nodeMailer";
 
 
 // Register functionality
-const registerPatient = async (
-	payload: authInterface.IRegisterPatientPayload,
-) => {
+const registerPatient = async (payload: authInterface.IRegisterPatientPayload) => {
 	const { name, password, patient: patientData } = payload;
 	const email = payload.email.trim().toLowerCase();
 
@@ -37,19 +35,119 @@ const registerPatient = async (
 
 	const hashedPassword = await bcrypt.hash(password, Number(config.bcrypt_salt_rounds));
 
+	/* starting the registration with first redis */
+	const expirationSecond = 5 * 60;
+
+	const otpValue  = crypto.randomInt(100000, 1000000).toString();
+	const otpKey = `patient-registration-otp: ${email}`;
+
+	await redisClient.set(otpKey, otpValue, {
+		expiration: {
+			type: "EX",
+			value: expirationSecond
+		}
+	});
+
+	const patientRegistrationKey = `patient-registration-data:${email}`
+	const redisUserPayload = {
+		name, 
+		email,
+		password: hashedPassword,
+		patient: patientData
+	}
+
+	await redisClient.set(patientRegistrationKey, JSON.stringify(redisUserPayload), {
+		expiration: {
+			type: "EX",
+			value: expirationSecond
+		}
+	});
+
+	/* processing ejs */
+	const templatePath = path.join(process.cwd(), "/src/app/template/register-user-otp.ejs");
+	
+	const templateData = {
+		name,
+		email,
+		otp: otpValue,
+		expirationLimit: expirationSecond / 60
+	};
+
+	const html  = await ejs.renderFile(templatePath, templateData);
+
+	/* node-mailer send otp */
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: email,
+		subject: "Email Verification",
+		html
+	});
+};
+
+
+// verification user for register functionality
+const verificationPatient = async(payload: authInterface.IVerifyEmailPayload) => {
+	const otp = payload.otp
+	const email = payload.email.trim().toLowerCase();
+
+	const isUserExist = await prisma.user.findUnique({
+		where: { email },
+	});
+
+	if(isUserExist?.status === "BLOCKED") {
+		throw new Error("user is blocked")
+	}
+
+	if(isUserExist?.emailVerified) {
+		throw new Error("user already verified");
+	}
+
+
+	if(isUserExist?.isDeleted || isUserExist?.status === "DELETED"){
+		throw new Error("user is deleted");
+	}
+
+	if(isUserExist?.googleId && isUserExist?.authProvider === "GOOGLE") {
+		throw new Error("user has an account with GOOGLE");
+	}
+
+	/* match the otp with redis */
+	const otpKey = `patient-registration-otp: ${email}`;
+	const redisOTP = await redisClient.get(otpKey);
+
+	if(!redisOTP) {
+		throw new Error("OTP not found")
+	}
+
+	if(redisOTP !== otp) {
+		throw new Error("OTP not matched")
+	}
+
+	await redisClient.del([otpKey]);
+
+	/* get the data from redis database  */
+	const patientRegistrationKey = `patient-registration-data:${email}`;
+	const registrationData = await redisClient.get(patientRegistrationKey);
+
+	if(!registrationData) {
+		throw new Error("User dose not exist")
+	}
+
+	const patientPayload: authInterface.IRegisterPatientPayload = JSON.parse(registrationData);
+
 	const createdUser = await prisma.user.create({
 		data: {
-			name,
-			email,
-			password: hashedPassword,
+			name: patientPayload.name,
+			email: patientPayload.email,
+			password: patientPayload.password,
 			role: Role.PATIENT,
 			status: UserStatus.ACTIVE,
 			emailVerified: false,
 			patient: {
 				create: {
-					name,
-					email,
-					contactNumber: patientData?.contactNumber || "",
+					name: patientPayload.name,
+					email: patientPayload.email,
+					contactNumber: patientPayload?.patient?.contactNumber || "",
 				},
 			},
 		},
@@ -83,7 +181,8 @@ const registerPatient = async (
 		accessToken,
 		refreshToken,
 	};
-};
+}
+
 
 // login user functionality
 const loginUser = async (payload: authInterface.ILoginUserPayload) => {
@@ -399,7 +498,7 @@ const forgotPassword = async(payload: authInterface.IForgotPasswordPayload) => {
 		name: isUserExist.name,
 		otp,
 		expirationLimit: expirationLimit / 60
-	})
+	});
 
 
 	/* node-mailer send otp */
@@ -489,6 +588,7 @@ const resetPassword = async(payload: authInterface.IResetPasswordPayload) => {
 
 export const AuthService = {
 	registerPatient,
+	verificationPatient,
 	loginUser,
 	getMe,
 	refreshToken,
