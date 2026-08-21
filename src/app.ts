@@ -14,6 +14,7 @@ import { AuthRoutes } from "./app/module/auth/auth.route";
 import { redisClient } from "./app/lib/redis";
 import { UserRoutes } from "./app/module/user/user.route";
 import { getBkasToken } from "./app/lib/bkas";
+import { AppointmentRoute } from "./app/module/appointment/appoinment.route";
 
 const app: Application = express();
 
@@ -35,6 +36,7 @@ app.use(cookieParser());
 // Main Routes
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/user", UserRoutes);
+app.use("/api/v1/appointment", AppointmentRoute);
 
 
 // test tryout
