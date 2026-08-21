@@ -19,14 +19,18 @@ const bookAppointment = catchAsync(async (req: Request, res: Response) => {
 
 const bookAppointmentCallBack = catchAsync(async (req: Request, res: Response) => {
 	console.log("req.query", req.query);
-    const result = AppointmentService.bookAppointmentCallBack();
+    const {executedPaymentResult, redirectUrl} = await AppointmentService.bookAppointmentCallBack(req.query);
 
-	sendResponse(res, {
-		statusCode: httpStatus.CREATED,
-		success: true,
-		message: "Bkash Payment on final",
-		data: result,
-	});
+	console.log("call-back controller", executedPaymentResult)
+
+	res.redirect(redirectUrl);
+
+	// sendResponse(res, {
+	// 	statusCode: httpStatus.CREATED,
+	// 	success: true,
+	// 	message: "Bkash Payment on final",
+	// 	data: result,
+	// });
 });
 
 
