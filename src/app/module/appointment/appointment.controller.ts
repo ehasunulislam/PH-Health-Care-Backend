@@ -6,36 +6,62 @@ import { AppointmentService } from "./appointment.service";
 
 
 const bookAppointment = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+	const user = req.user!;
 
-    const result = await AppointmentService.bookAppointmentService();
+    const result = await AppointmentService.bookAppointmentService(payload, user);
 
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "Bkash Payment on final",
+		message: "Appointment Payment Initiated Successfully",
 		data: result,
 	});
 });
 
+
+const payAppointment = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+	const user = req.user!;
+
+    const result = await AppointmentService.payAppointment(payload, user);
+
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Appointment Payment Initiated Successfully",
+		data: result,
+	});
+});
+
+
 const bookAppointmentCallBack = catchAsync(async (req: Request, res: Response) => {
 	console.log("req.query", req.query);
-    const {executedPaymentResult, redirectUrl} = await AppointmentService.bookAppointmentCallBack(req.query);
+    const {redirectUrl} = await AppointmentService.bookAppointmentCallback(req.query);
 
-	console.log("call-back controller", executedPaymentResult)
 
 	res.redirect(redirectUrl);
+});
 
-	// sendResponse(res, {
-	// 	statusCode: httpStatus.CREATED,
-	// 	success: true,
-	// 	message: "Bkash Payment on final",
-	// 	data: result,
-	// });
+
+const cancleAppointment = catchAsync(async (req: Request, res: Response) => {
+	const payload = req.body;
+
+    const result = await AppointmentService.canceledAppointment(payload);
+
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Appointment Payment Cancelled Refund Successfully",
+		data: result,
+	});
 });
 
 
 export const AppointmentController = {
     bookAppointment,
-	bookAppointmentCallBack
+	bookAppointmentCallBack,
+	payAppointment,
+	cancleAppointment
 };
 
