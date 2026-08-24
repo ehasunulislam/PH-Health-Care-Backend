@@ -6,21 +6,20 @@ model Payment {
   amount   Decimal @db.Decimal(10, 2)
   currency String  @default("BDT")
 
-  paymentGetWay String @default("bkash") 
+  paymentGetWay         String @default("bkash")
   merchantInvoiceNumber String @unique //appointment id
 
   bkashPaymentId String? @unique
-  bkashTrxId String?
+  bkashTrxId     String?
   payerReference String? //user mobile or email 
-  paidAt String?
+  paidAt         String?
 
   gatewayResponse Json?
 
-  refundTrxId String?
+  refundTrxId  String?
   refundAmount Decimal? @db.Decimal(10, 2)
   refundReason String?
-  refundAt String?
-
+  refundAt     String?
 
   appointmentId String      @unique
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
