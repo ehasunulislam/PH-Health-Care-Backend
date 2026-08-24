@@ -76,6 +76,7 @@ const verificationPatient = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+
 // login user functionality
 const loginUser = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
