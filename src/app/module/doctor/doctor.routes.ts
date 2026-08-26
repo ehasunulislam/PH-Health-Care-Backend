@@ -4,7 +4,7 @@ import { upload } from "../../lib/multer";
 
 const router = Router();
 
-// register route
+// Apply as a doctor route
 router.post("/apply-as-doctor", 
     upload.fields([
         {
@@ -19,5 +19,9 @@ router.post("/apply-as-doctor",
     ]),
     DoctorController.applyAsDoctor
 );
+
+
+// verify doctor route
+router.post("/apply-as-doctor/verify-email", DoctorController.verifyDoctorEmail)
 
 export const DoctorRoutes = router;
