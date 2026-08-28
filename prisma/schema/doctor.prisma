@@ -27,12 +27,16 @@ model Doctor {
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
+  schedule Schedule[]
+  appointments Appointment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  
   @@index([email], name: "idx_doctor_email")
   @@map("doctor")
 }
