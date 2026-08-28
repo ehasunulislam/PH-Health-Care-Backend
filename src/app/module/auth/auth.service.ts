@@ -18,6 +18,8 @@ import type * as authInterface from "./auth.interface";
 import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodeMailer";
 import { from } from "node:stream/iter";
+import { AppError } from "../../utils/AppError";
+import httpStatus from "http-status"
 
 
 
@@ -214,7 +216,8 @@ const loginUser = async (payload: authInterface.ILoginUserPayload) => {
 	});
 
 	if (!user) {
-		throw new Error("User not found");
+		// throw new Error("User not found");
+		throw new AppError(httpStatus.NOT_FOUND, "User not found");
 	}
 
 	if (user.status === UserStatus.BLOCKED) {
