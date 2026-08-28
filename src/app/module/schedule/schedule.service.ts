@@ -363,10 +363,85 @@ const updateSchedule = async (scheduleId : string, payload : IUpdateSchedulePayl
 }
 
 
+// publish schedule
+const publishSchedule = async(scheduleId: string, user: RequestUser) => {
+    const doctor = await prisma.doctor.findUnique({
+        where: {
+            userId: user.userId
+        }
+    });
+
+    if(!doctor) {
+        throw new AppError(HttpStatus.NOT_FOUND, "Doctor Profile Not Found");
+    }
+
+    const schedule = await prisma.schedule.findUnique({
+        where: {
+            id: scheduleId,
+            doctorId: doctor.id
+        }
+    });
+
+    if(!schedule || schedule.isDeleted) {
+        throw new AppError(HttpStatus.NOT_FOUND, "Schedule Not Found");
+    }
+
+    if(schedule.staus === ScheduleStaus.PUBLISHED) {
+        throw new AppError(httpStatus.CONFLICT, "Schedule Is Already Published")
+    }
+
+    return publishSchedule
+ }
+
+
+// delete schedule
+const deleteSchedule = async(scheduleId: string, user: RequestUser) => {
+     const doctor = await prisma.doctor.findUnique({
+        where: {
+            userId: user.userId
+        }
+    });
+
+    if(!doctor) {
+        throw new AppError(HttpStatus.NOT_FOUND, "Doctor Profile Not Found");
+    }
+
+    const schedule = await prisma.schedule.findUnique({
+        where: {
+            id: scheduleId,
+            doctorId: doctor.id
+        }
+    });
+
+    if(!schedule || schedule.isDeleted) {
+        throw new AppError(HttpStatus.NOT_FOUND, "Schedule Not Found");
+    }
+
+    if(schedule.staus === ScheduleStaus.PUBLISHED && schedule.totalSlots !== schedule.availableSlot) {
+        throw new AppError(httpStatus.CONFLICT, "Schedule Once Published And Appointment Booked Cannot be Deleted")
+    }
+
+    const deletedSchedule = await prisma.schedule.update({
+        where: {
+            id: schedule.id
+        },
+
+        data: {
+            isDeleted: true, 
+            deletedAt: new Date() 
+        }
+    })
+
+    return deleteSchedule
+}
+
+
 export const scheduleService = {
     createSchedule,
     getMySchedules,
     getAllSchedules,
     getScheduleById,
-    updateSchedule
+    updateSchedule,
+    publishSchedule,
+    deleteSchedule
 }
