@@ -1,5 +1,5 @@
 import { addMinutes, isBefore, isSameDay, subHours } from "date-fns";
-import { AppointmentStatus, PaymentStatus } from "../../../generated/prisma/enums";
+import { AppointmentStatus, PaymentStatus, Role } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { getBkasToken } from "../../lib/bkas";
 import { prisma } from "../../lib/prisma";
@@ -9,6 +9,8 @@ import { IBookAppointmentPayload, ICancelAppointmentPayload, IPayAppointmentPayl
 import  httpStatus  from "http-status";
 import { transporter } from "../../lib/nodeMailer";
 import  PDFDocument  from 'pdfkit'
+import { IQuery } from "../../interfaces/global.interface";
+import { AppointmentWhereInput } from "../../../generated/prisma/models";
 
 const bookAppointmentService = async (payload: IBookAppointmentPayload, user: RequestUser) => {
     const transactionResult = await prisma.$transaction(async(tx) => {
@@ -634,11 +636,231 @@ const updateAppointmentStatus = async(appointmentId: string, payload: IUpdateApp
 	}
 }
 
+// patients appointment
+const getMyAppointments = async (query : IQuery, user : RequestUser) => {
+	const limit = query.limit ? Number(query.limit) : 10; 
+	const page = query.page ? Number(query.page) : 1;
+	const skip = (page - 1) * limit;
+	const sortBy = query.sortBy ? query.sortBy : "createdAt";
+	const sortOrder = query.sortOrder ? query.sortOrder : "desc"
+
+	const patient = await prisma.patient.findUnique({
+		where: { userId: user.userId },
+	});
+
+	if (!patient) {
+		throw new AppError(httpStatus.NOT_FOUND, "Patient Profile Not Found");
+	}
+
+	const andConditions: AppointmentWhereInput[] = [
+		{
+			patientId : patient.id
+		}
+	];
+
+	if (query.status) {
+		andConditions.push({ status: query.status });
+	}
+
+	const appointments = await prisma.appointment.findMany({
+		where: { AND: andConditions },
+		take: limit,
+		skip,
+		orderBy: { [sortBy] : sortOrder},
+		include: {
+			doctor: { select: { id: true, name: true, specialization: true } },
+			schedule: true,
+			payment: true,
+		},
+	});
+
+	const total = await prisma.appointment.count({
+		where: { AND: andConditions },
+	});
+
+	return {
+		data: appointments,
+		meta: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit),
+		},
+	};
+
+
+}
+
+//doctor appointments
+const getDoctorAppointments = async (query: IQuery, user: RequestUser) => {
+
+	const limit = query.limit ? Number(query.limit) : 10;
+	const page = query.page ? Number(query.page) : 1;
+	const skip = (page - 1) * limit;
+	const sortBy = query.sortBy ? query.sortBy : "createdAt";
+	const sortOrder = query.sortOrder ? query.sortOrder : "desc"
+
+	const doctor = await prisma.doctor.findUnique({
+		where: { userId: user.userId },
+	});
+
+	if (!doctor) {
+		throw new AppError(httpStatus.NOT_FOUND, "Doctor Profile Not Found");
+	}
+
+	const andConditions: AppointmentWhereInput[] = [
+		{
+			doctorId : doctor.id
+		}
+	];
+
+	if (query.status) {
+		andConditions.push({ status: query.status });
+	}
+
+	const appointments = await prisma.appointment.findMany({
+		where: { AND: andConditions },
+		take: limit,
+		skip,
+		orderBy: { [sortBy] : sortOrder},
+		include: {
+			patient: {
+				select: { id: true, name: true, email: true, contactNumber: true },
+			},
+			schedule: true,
+			payment: true,
+		},
+	});
+
+	const total = await prisma.appointment.count({
+		where: { AND: andConditions },
+	});
+
+	return {
+		data: appointments,
+		meta: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit),
+		},
+	};
+}
+
+//admin super admin
+const getAllAppointments = async (query : IQuery) => {
+	const limit = query.limit ? Number(query.limit) : 10;
+	const page = query.page ? Number(query.page) : 1;
+	const skip = (page - 1) * limit;
+	const sortBy = query.sortBy ? query.sortBy : "createdAt";
+	const sortOrder = query.sortOrder ? query.sortOrder : "desc"
+ 
+	const andConditions: AppointmentWhereInput[] = [];
+
+	if (query.status) {
+		andConditions.push({ status: query.status });
+	}
+
+	if (query.doctorId) {
+		andConditions.push({ doctorId: query.doctorId });
+	}
+
+	if (query.patientId) {
+		andConditions.push({ patientId: query.patientId });
+	}
+
+	if(query.doctorEmail){
+		andConditions.push({
+			doctor : {
+				email : query.doctorEmail
+			}
+		})
+	}
+	if(query.patientEmail){
+		andConditions.push({
+			patient : {
+				email : query.patientEmail
+			}
+		})
+	}
+
+	const appointments = await prisma.appointment.findMany({
+		where: { AND: andConditions },
+		take: limit,
+		skip,
+		orderBy: { [sortBy] : sortOrder },
+		include: {
+			patient: { select: { id: true, name: true, email: true } },
+			doctor: { select: { id: true, name: true, specialization: true } },
+			schedule: true,
+			payment: true,
+		},
+	});
+
+	const total = await prisma.appointment.count({
+		where: { AND: andConditions },
+	});
+
+	return {
+		data: appointments,
+		meta: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit),
+		},
+	};
+
+
+}
+
+// for all loggedin user
+const getSingleAppointment = async (appointmentId : string, user : RequestUser) => {
+	const appointment = await prisma.appointment.findUnique({
+		where: { id: appointmentId },
+		include: {
+			patient: { select: { id: true, name: true, email: true, userId: true } },
+			doctor: {
+				select: { id: true, name: true, specialization: true, userId: true },
+			},
+			schedule: true,
+			payment: true,
+		},
+	});
+
+	if (!appointment) {
+		throw new AppError(httpStatus.NOT_FOUND, "Appointment Not Found");
+	}
+
+	if(user.role === Role.PATIENT){
+		if(appointment.patient.userId !== user.userId){
+			throw new AppError(
+				httpStatus.FORBIDDEN,
+				"You Are Not Allowed To View This Appointment",
+			);
+		}
+	}
+	if(user.role === Role.DOCTOR){
+		if(appointment.doctor.userId !== user.userId){
+			throw new AppError(
+				httpStatus.FORBIDDEN,
+				"You Are Not Allowed To View This Appointment",
+			);
+		}
+	}
+
+	return appointment
+}
+
 
 export const AppointmentService = {
     bookAppointmentService,
     bookAppointmentCallback,
     payAppointment,
     canceledAppointment,
-    updateAppointmentStatus
+    updateAppointmentStatus,
+    getMyAppointments,
+    getDoctorAppointments,
+    getAllAppointments,
+    getSingleAppointment
 }
