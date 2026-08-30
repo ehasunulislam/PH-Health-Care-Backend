@@ -5,7 +5,7 @@ import { getBkasToken } from "../../lib/bkas";
 import { prisma } from "../../lib/prisma";
 import { RequestUser } from "../../middleware/checkAuth";
 import { AppError } from "../../utils/AppError";
-import { IBookAppointmentPayload } from "./appointment.interface";
+import { IBookAppointmentPayload, ICancelAppointmentPayload, IPayAppointmentPayload, IUpdateAppointmentStatusPayload } from "./appointment.interface";
 import  httpStatus  from "http-status";
 import { transporter } from "../../lib/nodeMailer";
 import  PDFDocument  from 'pdfkit'
@@ -152,7 +152,7 @@ const bookAppointmentService = async (payload: IBookAppointmentPayload, user: Re
 
 
 // if any  payment is not confiremed the use this function 
-const payAppointment = async(payload: any, user: RequestUser) => {
+const payAppointment = async(payload: IPayAppointmentPayload, user: RequestUser) => {
     const appointmentId = payload.appointmentId;
 
     const existingAppointment = await prisma.appointment.findUnique({
@@ -441,7 +441,7 @@ const bookAppointmentCallback = async (query: Record<string, any>) => {
 
 
 // refund system
-const canceledAppointment = async(payload: any, user: RequestUser) => {
+const canceledAppointment = async(payload: ICancelAppointmentPayload, user: RequestUser) => {
     const transactionResult = await prisma.$transaction(async(tx) => {
         const appointmentId = payload.appointmentId;
 
@@ -558,10 +558,87 @@ const canceledAppointment = async(payload: any, user: RequestUser) => {
     return transactionResult
 }
 
+// update appointment only dcotor [ confirmed -> Ongoing -> Completed  ]
+const updateAppointmentStatus = async(appointmentId: string, payload: IUpdateAppointmentStatusPayload, user: RequestUser) => {
+    const doctor = await prisma.doctor.findUnique({
+        where: {
+            userId: user.userId
+        }
+    });
+
+    if (!doctor) {
+		throw new AppError(httpStatus.NOT_FOUND, "Doctor Profile Not Found");
+	}
+
+    const appointment = await prisma.appointment.findUnique({
+        where: {
+            id: appointmentId,
+            doctorId: doctor.id
+        }
+    });
+
+    if (!appointment) {
+		throw new AppError(httpStatus.NOT_FOUND, "Appointment Not Found");
+	}
+
+    if(appointment.status === AppointmentStatus.COMPLETED){
+		throw new AppError(httpStatus.FORBIDDEN, "Appointment is already completed")
+	}
+
+	if(appointment.status === AppointmentStatus.CANCELED){
+		throw new AppError(httpStatus.FORBIDDEN, "Appointment is already cancelled")
+	}
+
+	if(appointment.status === AppointmentStatus.PENDING){
+		throw new AppError(httpStatus.FORBIDDEN, "Appointment is Pending. You can change the status after appointment is confirmed")
+	}
+
+    if(appointment.status === AppointmentStatus.CONFIRMED){
+
+		if(payload.status !== "ONGOING"){
+			throw new AppError(httpStatus.BAD_REQUEST, "Confirmed Appointment Must Be Ongoing At First")
+		}
+
+		await prisma.appointment.update({
+			where : {
+				id : appointment.id
+			},
+			data : {
+				status : AppointmentStatus.ONGOING
+			}
+		})
+	}
+
+    if(appointment.status === AppointmentStatus.ONGOING){
+
+		if(payload.status !== "COMPLETED"){
+			throw new AppError(httpStatus.BAD_REQUEST, "Ongoinf Appointment Must Be Complted.")
+		}
+
+		await prisma.appointment.update({
+			where: {
+				id: appointment.id
+			},
+			data: {
+				status: AppointmentStatus.COMPLETED
+			}
+		});
+
+        const updatedAppointment = await prisma.appointment.findUnique({
+            where : {
+                id : appointment.id
+            }
+        });
+
+	    return updatedAppointment
+	}
+}
+
 
 export const AppointmentService = {
     bookAppointmentService,
     bookAppointmentCallback,
     payAppointment,
-    canceledAppointment
+    canceledAppointment,
+    updateAppointmentStatus
 }
