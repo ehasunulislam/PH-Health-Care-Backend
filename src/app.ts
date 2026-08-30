@@ -16,6 +16,7 @@ import { UserRoutes } from "./app/module/user/user.route";
 import { getBkasToken } from "./app/lib/bkas";
 import { AppointmentRoute } from "./app/module/appointment/appoinment.route";
 import { DoctorRoutes } from "./app/module/doctor/doctor.routes";
+import { ScheduleRoutes } from "./app/module/schedule/schedule.route";
 
 const app: Application = express();
 
@@ -39,6 +40,7 @@ app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/user", UserRoutes);
 app.use("/api/v1/appointment", AppointmentRoute);
 app.use("/api/v1/doctor", DoctorRoutes);
+app.use("/api/v1/doctor", ScheduleRoutes);
 
 
 // test tryout
