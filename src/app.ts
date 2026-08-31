@@ -19,6 +19,7 @@ import { DoctorRoutes } from "./app/module/doctor/doctor.routes";
 import { ScheduleRoutes } from "./app/module/schedule/schedule.route";
 import { PaymentRoutes } from "./app/module/payment/payment.route";
 import { PrescriptionRoutes } from "./app/module/prescription/prescription.routes";
+import { AnalyticsRoutes } from "./app/module/analytics/analytics.route";
 
 const app: Application = express();
 
@@ -45,6 +46,7 @@ app.use("/api/v1/doctor", DoctorRoutes);
 app.use("/api/v1/doctor", ScheduleRoutes);
 app.use("/api/v1/doctor", PaymentRoutes);
 app.use("/api/v1/prescription", PrescriptionRoutes);
+app.use("/api/v1/analytics", AnalyticsRoutes);
 
 
 // test tryout
