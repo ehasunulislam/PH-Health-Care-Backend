@@ -18,6 +18,7 @@ import { AppointmentRoute } from "./app/module/appointment/appoinment.route";
 import { DoctorRoutes } from "./app/module/doctor/doctor.routes";
 import { ScheduleRoutes } from "./app/module/schedule/schedule.route";
 import { PaymentRoutes } from "./app/module/payment/payment.route";
+import { PrescriptionRoutes } from "./app/module/prescription/prescription.routes";
 
 const app: Application = express();
 
@@ -43,6 +44,7 @@ app.use("/api/v1/appointment", AppointmentRoute);
 app.use("/api/v1/doctor", DoctorRoutes);
 app.use("/api/v1/doctor", ScheduleRoutes);
 app.use("/api/v1/doctor", PaymentRoutes);
+app.use("/api/v1/prescription", PrescriptionRoutes);
 
 
 // test tryout
