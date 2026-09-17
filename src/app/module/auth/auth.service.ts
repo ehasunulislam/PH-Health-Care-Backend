@@ -359,7 +359,7 @@ const googleLogin = async (payload: authInterface.IGoogleLogin) => {
 	if (!googleIdTokenPayload) {
 		throw new Error("Google Id Token verification failed or Expired");
 	}
-
+	
 	if (!googleIdTokenPayload.email) {
 		throw new Error("Google Email not found");
 	}
@@ -623,6 +623,12 @@ const resetPassword = async(payload: authInterface.IResetPasswordPayload) => {
 	});
 }
 
+
+// logout
+const logout = async () => { 
+	return null; 
+};
+
 export const AuthService = {
 	registerPatient,
 	verificationPatient,
@@ -631,5 +637,6 @@ export const AuthService = {
 	refreshToken,
 	googleLogin,
 	forgotPassword, 
-	resetPassword
+	resetPassword,
+	logout
 };

@@ -60,4 +60,11 @@ router.post("/reset-password",
 	AuthController.resetPassword
 );
 
+// logout
+router.post(
+	"/logout",
+	auth(Role.ADMIN, Role.DOCTOR, Role.PATIENT, Role.SUPER_ADMIN),
+	AuthController.logout,
+);
+
 export const AuthRoutes = router;
